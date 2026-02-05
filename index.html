@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bossanova</title>
+
+<link rel="icon" type="image/x-icon" href="gc.ico">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+  --bg: #0e0e0e;
+  --panel: #1a1a1a;
+  --text: #f2f2f2;
+  --accent: #4cafef;
+  --muted: #888;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  padding: 1rem;
+  background: var(--panel);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+#search {
+  margin-left: auto;
+  padding: 0.5rem;
+  background: #111;
+  border: 1px solid #333;
+  color: var(--text);
+}
+
+main {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.game {
+  background: var(--panel);
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+}
+
+.game:hover {
+  outline: 2px solid var(--accent);
+}
+
+.game h3 {
+  margin: 0 0 0.5rem;
+}
+
+.favorite {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+.favorite.active {
+  color: gold;
+}
+
+#player {
+  position: fixed;
+  inset: 0;
+  background: black;
+  display: none;
+  flex-direction: column;
+}
+
+#player iframe {
+  flex: 1;
+  border: none;
+}
+
+#closeBtn {
+  padding: 0.75rem;
+  background: var(--panel);
+  color: var(--text);
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🎮 Game Center</h1>
+  <input id="search" placeholder="Search games...">
+</header>
+
+<main id="gameList"></main>
+
+<div id="player">
+  <button id="closeBtn">⬅ Back to Hub</button>
+  <iframe id="gameFrame" allowfullscreen></iframe>
+</div>
+
+<script>
+const games = [
+  { id: "tetris", name: "Tetris", file: "games/tetris.html" },
+  { id: "snake", name: "Snake", file: "games/snake.html" }
+];
+
+const gameList = document.getElementById("gameList");
+const search = document.getElementById("search");
+const player = document.getElementById("player");
+const frame = document.getElementById("gameFrame");
+
+const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+
+function saveFavorites() {
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+}
+
+function render() {
+  gameList.innerHTML = "";
+
+  const q = search.value.toLowerCase();
+
+  games
+    .filter(g => g.name.toLowerCase().includes(q))
+    .sort((a, b) =>
+      favorites.includes(b.id) - favorites.includes(a.id)
+    )
+    .forEach(game => {
+      const div = document.createElement("div");
+      div.className = "game";
+
+      const fav = document.createElement("div");
+      fav.className = "favorite";
+      fav.innerHTML = favorites.includes(game.id) ? "★" : "☆";
+      fav.classList.toggle("active", favorites.includes(game.id));
+
+      fav.onclick = e => {
+        e.stopPropagation();
+        if (favorites.includes(game.id)) {
+          favorites.splice(favorites.indexOf(game.id), 1);
+        } else {
+          favorites.push(game.id);
+        }
+        saveFavorites();
+        render();
+      };
+
+      div.innerHTML = `<h3>${game.name}</h3>`;
+      div.appendChild(fav);
+
+      div.onclick = () => openGame(game.file);
+
+      gameList.appendChild(div);
+    });
+}
+
+function openGame(file) {
+  frame.src = file;
+  player.style.display = "flex";
+  document.documentElement.requestFullscreen?.();
+}
+
+document.getElementById("closeBtn").onclick = () => {
+  frame.src = "";
+  player.style.display = "none";
+  document.exitFullscreen?.();
+};
+
+search.oninput = render;
+
+render();
+</script>
+
+</body>
+</html>
